@@ -64,7 +64,7 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: |
           mkdir deploy
-          cp webRenderer.data webRenderer.html webRenderer.js webRenderer.wasm webRenderer_favicon.png FileSaver.js deploy/
+          cp webRenderer.data webRenderer.html webRenderer.js webRenderer.wasm webRenderer_favicon.png deploy/
           mv deploy/webRenderer.html deploy/index.html
 
       - name: Publish
