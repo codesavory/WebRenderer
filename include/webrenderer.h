@@ -1,3 +1,5 @@
+#pragma once
+
 #include "renderpass.h"
 #include "shader.h"
 #include "hello_imgui/hello_imgui.h"

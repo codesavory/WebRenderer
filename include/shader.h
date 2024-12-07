@@ -1,3 +1,5 @@
+#pragma once
+
 #include "renderpass.h"
 
 class Shader {

@@ -57,21 +57,14 @@ endif()
 # ==============
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-hello_imgui_add_app(webRenderer src/app.cpp)
+hello_imgui_add_app(
+    WebRenderer
+    src/app.cpp
+    src/renderpass.cpp
+    src/shader.cpp
+)
 
-#hello_imgui_add_app(
-#  SamplinSafari
-#  src/app.cpp
-#  ${CMAKE_CURRENT_BINARY_DIR}/src/common.cpp
-#  src/opengl_check.cpp
-#  src/shader.cpp
-#  src/shader_gl.cpp
-#  src/export_to_file.cpp
-#  src/renderpass_gl.cpp
-#  ${EXTRA_SOURCES}
-#  ASSETS_LOCATION
-#  ${CMAKE_CURRENT_BINARY_DIR}/assets
-#)
+target_link_libraries(WebRenderer PRIVATE linalg fmt::fmt)
 
 # hello_imgui_add_app is a helper function, similar to cmake's "add_executable"
 # Usage:
