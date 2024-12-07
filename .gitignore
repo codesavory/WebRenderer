@@ -3,3 +3,6 @@ cmake-build-*/
 external/
 tmp/
 logs/
+
+.DS_Store
+.vscode/

@@ -41,8 +41,22 @@ if(hello_imgui_ADDED)
   message(STATUS "hello_imgui library added")
 endif()
 
+CPMAddPackage("gh:sgorsten/linalg@2.2")
+if(linalg_ADDED)
+  message(STATUS "linalg library added")
+  add_library(linalg INTERFACE IMPORTED)
+  target_include_directories(linalg INTERFACE "${linalg_SOURCE_DIR}")
+endif()
+
+CPMAddPackage("gh:fmtlib/fmt#10.1.1")
+if(fmt_ADDED)
+  message(STATUS "fmt library added")
+endif()
+
 # Build your app
 # ==============
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 hello_imgui_add_app(webRenderer src/app.cpp)
 
 #hello_imgui_add_app(
