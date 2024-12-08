@@ -1,4 +1,5 @@
 #include "hello_imgui/hello_imgui_include_opengl.h" // cross-platform way to include OpenGL headers
+#include "opengl_check.h"
 #include "renderpass.h"
 
 #include <fmt/core.h>
@@ -22,7 +23,7 @@ void RenderPass::begin() {
     set_viewport(m_viewport_offset, m_viewport_size);
     
     // clear the color buffer
-    CHK(glClear(m_clear_color.x, m_clear_color.y, m_clear_color.z, m_clear_color.w));
+    CHK(glClearColor(m_clear_color.x, m_clear_color.y, m_clear_color.z, m_clear_color.w));
     CHK(glClear(GL_COLOR_BUFFER_BIT));
     
 }

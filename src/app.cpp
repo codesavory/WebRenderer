@@ -7,8 +7,9 @@ int main(int , char *[])
 {
     try
     {
-        WebRenderer renderer;
-        renderer.run();
+        //WebRenderer renderer;
+        //renderer.run();
+        std::cout << "Running WebRenderer App!\n";
     }
     catch (const std::runtime_error &e)
     {

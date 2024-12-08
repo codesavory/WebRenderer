@@ -6,6 +6,8 @@ Inspired by the works of Wojciech Jarosz in https://github.com/wkjarosz/SamplinS
 #include "linalg.h"
 #include <unordered_map>
 
+using namespace linalg::aliases;
+
 // An abstraction fo rendering passes that work with OpenGL and Meta
 
 class RenderPass {
