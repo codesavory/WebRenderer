@@ -62,6 +62,7 @@ hello_imgui_add_app(
     src/app.cpp
     src/renderpass.cpp
     src/shader.cpp
+    src/webrenderer.cpp
 )
 
 target_link_libraries(WebRenderer PRIVATE linalg fmt::fmt)
