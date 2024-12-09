@@ -53,10 +53,7 @@ static GLuint compile_gl_shader(GLenum type, const std::string &name, const std:
     return id;
 }
 
-Shader::Shader(RenderPass *render_pass, const std::string &name, const std::string &vs_filename,
-               const std::string &fs_filename) :
-    m_render_pass(render_pass),
-    m_name(name) {
+Shader::Shader(RenderPass *render_pass, const std::string &name, const std::string &vs_filename, const std::string &fs_filename) : m_render_pass(render_pass), m_name(name) {
 
     string vertex_shader, fragment_shader;
 

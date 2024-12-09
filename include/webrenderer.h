@@ -13,6 +13,6 @@ public:
     void run();
 private:
     RenderPass m_render_pass;
-    Shader *m_texture_shader = nullptr;
+    Shader* m_triangle_shader = nullptr;
     HelloImGui::RunnerParams m_params;
 };
