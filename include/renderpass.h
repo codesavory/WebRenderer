@@ -38,8 +38,8 @@ protected:
     int2 m_framebuffer_size;
     bool m_active;
     
-    // FUTURE: depth buffer, culling, blendering and scissor test
+    // FUTURE: depth buffer, culling, blending and scissor test
     
-    // OpenGL vars
+    //#if defined(HELLOIMGUI_HAS_OPENGL)
     int4 m_viewport_backup;
 };
