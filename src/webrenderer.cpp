@@ -2,65 +2,73 @@
 #include "shader.h"
 #include "renderpass.h"
 #include "hello_imgui/hello_imgui.h"
-#include <iostream>
 
-WebRenderer::WebRenderer()
-    : m_render_pass(),
-      m_triangle_shader(nullptr)
-{
-    // Initialize the shader with dummy vertex and fragment shader file paths.
-    m_triangle_shader = new Shader(
-        &m_render_pass,
-        "TriangleShader",
-        "shaders/triangle.vert",
-        "shaders/triangle.frag");
+#include <fmt/core.h>
 
-    // Configure HelloImGui runner parameters
+WebRenderer::WebRenderer() {
+    // Initialize HelloImGui parameters (for example, UI window dimensions)
     m_params.appWindowParams.windowTitle = "WebRenderer";
     m_params.appWindowParams.windowGeometry.size = {800, 600};
-    m_params.callbacks.ShowGui = [this]() { draw_background(); };
-
-    std::cout << "WebRenderer initialized." << std::endl;
+    
+    m_params.callbacks.PostInit = [this]()
+    {
+        try
+        {
+            // Create a Shader (example: vertex and fragment shader files need to be valid)
+            m_triangle_shader = new Shader(
+                                           &m_render_pass,
+                                           "TriangleShader",
+                                           "shaders/triangle.vert",
+                                           "shaders/triangle.frag");
+            // Define the triangle vertices
+            // Example vertex buffer data (triangle vertices in normalized device coordinates)
+            std::vector<float3> vertices = {
+                {-0.5f, -0.5f, 0.0f},
+                { 0.5f, -0.5f, 0.0f},
+                { 0.0f,  0.5f, 0.0f}
+            };
+            
+            // Upload the vertex data to the shader buffer
+            m_triangle_shader->set_buffer("vertices", vertices);
+        }
+        
+        catch (const std::exception &e)
+        {
+            fmt::print(stderr, "Shader initialization failed!:\n\t{}.", e.what());
+            HelloImGui::Log(HelloImGui::LogLevel::Error, "Shader initialization failed!:\n\t%s.", e.what());
+        }
+    };
+    
+    // Setup other initialization here if needed
+    m_params.callbacks.CustomBackground        = [this]() { draw_background(); };
 }
 
-WebRenderer::~WebRenderer()
-{
-    //delete m_triangle_shader;
-    //m_triangle_shader = nullptr;
-
-    std::cout << "WebRenderer destroyed." << std::endl;
+WebRenderer::~WebRenderer() {
+    // Cleanup
+    if (m_triangle_shader) {
+        delete m_triangle_shader;
+        m_triangle_shader = nullptr;
+    }
 }
 
-void WebRenderer::draw_background()
-{
-    // Set up the render pass for background rendering
+void WebRenderer::draw_background() {
+    // Start render pass
     m_render_pass.begin();
 
-    // Clear with a solid color
-    m_render_pass.set_viewport({0, 0}, {800, 600});
-    m_render_pass.end();
-
-    // Use the shader to draw a simple triangle
+    // Set up shader (for example, use a simple color or texture for the background)
     m_triangle_shader->begin();
 
-    // Example vertex buffer data (triangle vertices in normalized device coordinates)
-    std::vector<float3> vertices = {
-        {-0.5f, -0.5f, 0.0f},
-        { 0.5f, -0.5f, 0.0f},
-        { 0.0f,  0.5f, 0.0f}
-    };
+    // Example drawing operation: draw a triangle
+    m_triangle_shader->draw_array(Shader::PrimitiveType::Triangle, 0, 3);
 
-    m_triangle_shader->set_buffer("positions", vertices);
-    m_triangle_shader->draw_array(Shader::PrimitiveType::Triangle, 0, vertices.size());
-
+    // End shader usage
     m_triangle_shader->end();
 
-    std::cout << "Background drawn." << std::endl;
+    // End render pass
+    m_render_pass.end();
 }
 
-void WebRenderer::run()
-{
+void WebRenderer::run() {
+    // Setup HelloImGui runner
     HelloImGui::Run(m_params);
-
-    std::cout << "WebRenderer running." << std::endl;
 }

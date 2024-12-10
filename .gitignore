@@ -3,6 +3,7 @@ cmake-build-*/
 external/
 tmp/
 logs/
+backup/
 
 .DS_Store
 .vscode/

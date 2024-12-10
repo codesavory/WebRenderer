@@ -8,6 +8,9 @@
 class Shader {
 public:
     Shader(RenderPass* render_pass, const std::string &name, const std::string &vs_filename, const std::string &fs_filename);
+    
+    // Release all resources
+    ~Shader();
 
     // Return the render pass associated with this shader
     RenderPass* render_pass() {
@@ -163,9 +166,6 @@ protected:
 
         std::string to_string() const;
     };
-
-    // Release all resources
-    ~Shader();
 
 protected:
     RenderPass* m_render_pass;

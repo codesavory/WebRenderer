@@ -5,33 +5,38 @@
 #include "opengl_check.h"
 #include "shader.h"
 
+#if !defined(GL_HALF_FLOAT)
+#define GL_HALF_FLOAT 0x140B
+#endif
+
 #include <fmt/core.h>
 
 using std::string;
 
-static GLuint compile_gl_shader(GLenum type, const std::string &name, const std::string& shader_string) {
+static GLuint compile_gl_shader(GLenum type, const std::string &name, const std::string &shader_string)
+{
     if (shader_string.empty())
         return (GLuint)0;
-    
+
     GLuint id;
-    CHK(id = glCreateShader(type));
-    const GLchar* files[] = {
-#ifdef __ESCRIPTEN__
-        "version 300 es\n",
+    id = glCreateShader(type);
+    //CHK(id = glCreateShader(type));
+    const GLchar *files[] = {
+#ifdef __EMSCRIPTEN__
+        "#version 300 es\n",
 #else
-        "version 330 core\n",
+        "#version 330 core\n",
 #endif
-        shader_string.c_str()
-    };
-    
+        shader_string.c_str()};
     CHK(glShaderSource(id, 2, files, nullptr));
     CHK(glCompileShader(id));
-    
+
     GLint status;
     CHK(glGetShaderiv(id, GL_COMPILE_STATUS, &status));
-    
-    if(status!=GL_TRUE) {
-        const char* type_str = nullptr;
+
+    if (status != GL_TRUE)
+    {
+        const char *type_str = nullptr;
         if (type == GL_VERTEX_SHADER)
             type_str = "vertex shader";
         else if (type == GL_FRAGMENT_SHADER)
@@ -42,71 +47,251 @@ static GLuint compile_gl_shader(GLenum type, const std::string &name, const std:
 #endif
         else
             type_str = "unknown shader type";
-        
+
         char error_shader[4096];
         CHK(glGetShaderInfoLog(id, sizeof(error_shader), nullptr, error_shader));
-        
-        string msg = string("compler_gl_shader(): unable to compile shader") + type_str + "\"" + name + "\":\n\n" + error_shader;
+
+        std::string msg =
+            std::string("compile_gl_shader(): unable to compile ") + type_str + " \"" + name + "\":\n\n" + error_shader;
         throw std::runtime_error(msg);
     }
-    
+
     return id;
 }
 
-Shader::Shader(RenderPass *render_pass, const std::string &name, const std::string &vs_filename, const std::string &fs_filename) : m_render_pass(render_pass), m_name(name) {
-
+Shader::Shader(RenderPass *render_pass, const std::string &name, const std::string &vs_filename,
+               const std::string &fs_filename) :
+    m_render_pass(render_pass),
+    m_name(name), m_shader_handle(0)
+{
     string vertex_shader, fragment_shader;
+    {
+        auto load_shader_file = [](const string &filename)
+        {
+            auto shader_txt = HelloImGui::LoadAssetFileData(filename.c_str());
+            if (shader_txt.data == nullptr)
+                throw std::runtime_error(fmt::format("Cannot load point shader from file \"{}\"", filename));
 
-    // Load shader files
-    auto load_shader_file = [](const string &filename) {
-        auto shader_txt = HelloImGui::LoadAssetFileData(filename.c_str());
-        if(shader_txt.data == nullptr)
-            throw std::runtime_error(fmt::format("Cannot load shader from file \"{}\"", filename));
-        return string((char*)shader_txt.data, shader_txt.dataSize);
-    };
-        
-    vertex_shader = load_shader_file(vs_filename);
-    fragment_shader = load_shader_file(fs_filename);
-    
-    // Compile shaders
-    GLuint vertex_shader_handle = compile_gl_shader(GL_VERTEX_SHADER, name, vertex_shader);
-    GLuint fragment_shader_handle = compile_gl_shader(GL_FRAGMENT_SHADER, name, fragment_shader);
-    
-    // Create shader program
+            return shader_txt;
+        };
+        auto vs = load_shader_file(vs_filename);
+        auto fs = load_shader_file(fs_filename);
+
+        vertex_shader   = string((char *)vs.data, vs.dataSize);
+        fragment_shader = string((char *)fs.data, fs.dataSize);
+
+        HelloImGui::FreeAssetFileData(&vs);
+        HelloImGui::FreeAssetFileData(&fs);
+    }
+
+    GLuint vertex_shader_handle   = compile_gl_shader(GL_VERTEX_SHADER, name, vertex_shader),
+           fragment_shader_handle = compile_gl_shader(GL_FRAGMENT_SHADER, name, fragment_shader);
+
     m_shader_handle = glCreateProgram();
-    glAttachShader(m_shader_handle, vertex_shader_handle);
-    glAttachShader(m_shader_handle, fragment_shader_handle);
-    glLinkProgram(m_shader_handle);
-    
-    // Clean up shader program
-    glDeleteShader(vertex_shader_handle);
-    glDeleteShader(fragment_shader_handle);
-    
-    // Check for linking errors
+
     GLint status;
-    glGetProgramiv(m_shader_handle, GL_LINK_STATUS, &status);
-    if (status != GL_TRUE) {
+    CHK(glAttachShader(m_shader_handle, vertex_shader_handle));
+    CHK(glAttachShader(m_shader_handle, fragment_shader_handle));
+    CHK(glLinkProgram(m_shader_handle));
+    CHK(glDeleteShader(vertex_shader_handle));
+    CHK(glDeleteShader(fragment_shader_handle));
+    CHK(glGetProgramiv(m_shader_handle, GL_LINK_STATUS, &status));
+
+    if (status != GL_TRUE)
+    {
         char error_shader[4096];
-        glGetProgramInfoLog(m_shader_handle, sizeof(error_shader), nullptr, error_shader);
+        CHK(glGetProgramInfoLog(m_shader_handle, sizeof(error_shader), nullptr, error_shader));
         m_shader_handle = 0;
         throw std::runtime_error("Shader::Shader(name=\"" + name + "\"): unable to link shader!\n\n" + error_shader);
     }
-    
-    // Register buffer for "indices"
-    Buffer &buf = m_buffers["indices"];
-    buf.index = -1;
-    buf.ndim = 1;
+
+    GLint attribute_count, uniform_count;
+    CHK(glGetProgramiv(m_shader_handle, GL_ACTIVE_ATTRIBUTES, &attribute_count));
+    CHK(glGetProgramiv(m_shader_handle, GL_ACTIVE_UNIFORMS, &uniform_count));
+
+    auto register_buffer = [&](BufferType type, const std::string &name, int index, GLenum gl_type)
+    {
+        if (m_buffers.find(name) != m_buffers.end())
+            throw std::runtime_error("Shader::Shader(): duplicate attribute/uniform name in shader code!");
+        else if (name == "indices")
+            throw std::runtime_error("Shader::Shader(): argument name 'indices' is reserved!");
+
+        Buffer &buf = m_buffers[name];
+        for (int i = 0; i < 3; ++i)
+            buf.shape[i] = 1;
+        buf.ndim  = 1;
+        buf.index = index;
+        buf.type  = type;
+
+        switch (gl_type)
+        {
+        case GL_FLOAT:
+            buf.dtype = VariableType::Float32;
+            buf.ndim  = 0;
+            break;
+
+        case GL_FLOAT_VEC2:
+            buf.dtype    = VariableType::Float32;
+            buf.shape[0] = 2;
+            break;
+
+        case GL_FLOAT_VEC3:
+            buf.dtype    = VariableType::Float32;
+            buf.shape[0] = 3;
+            break;
+
+        case GL_FLOAT_VEC4:
+            buf.dtype    = VariableType::Float32;
+            buf.shape[0] = 4;
+            break;
+
+        case GL_INT:
+            buf.dtype = VariableType::Int32;
+            buf.ndim  = 0;
+            break;
+
+        case GL_INT_VEC2:
+            buf.dtype    = VariableType::Int32;
+            buf.shape[0] = 2;
+            break;
+
+        case GL_INT_VEC3:
+            buf.dtype    = VariableType::Int32;
+            buf.shape[0] = 3;
+            break;
+
+        case GL_INT_VEC4:
+            buf.dtype    = VariableType::Int32;
+            buf.shape[0] = 4;
+            break;
+
+#if defined(HELLOIMGUI_USE_GLAD)
+        case GL_UNSIGNED_INT:
+            buf.dtype = VariableType::UInt32;
+            buf.ndim  = 0;
+            break;
+
+        case GL_UNSIGNED_INT_VEC2:
+            buf.dtype    = VariableType::UInt32;
+            buf.shape[0] = 2;
+            break;
+
+        case GL_UNSIGNED_INT_VEC3:
+            buf.dtype    = VariableType::UInt32;
+            buf.shape[0] = 3;
+            break;
+
+        case GL_UNSIGNED_INT_VEC4:
+            buf.dtype    = VariableType::UInt32;
+            buf.shape[0] = 4;
+            break;
+#endif
+
+        case GL_BOOL:
+            buf.dtype = VariableType::Bool;
+            buf.ndim  = 0;
+            break;
+
+        case GL_BOOL_VEC2:
+            buf.dtype    = VariableType::Bool;
+            buf.shape[0] = 2;
+            break;
+
+        case GL_BOOL_VEC3:
+            buf.dtype    = VariableType::Bool;
+            buf.shape[0] = 3;
+            break;
+
+        case GL_BOOL_VEC4:
+            buf.dtype    = VariableType::Bool;
+            buf.shape[0] = 4;
+            break;
+
+        case GL_FLOAT_MAT2:
+            buf.dtype    = VariableType::Float32;
+            buf.shape[0] = buf.shape[1] = 2;
+            buf.ndim                    = 2;
+            break;
+
+        case GL_FLOAT_MAT3:
+            buf.dtype    = VariableType::Float32;
+            buf.shape[0] = buf.shape[1] = 3;
+            buf.ndim                    = 2;
+            break;
+
+        case GL_FLOAT_MAT4:
+            buf.dtype    = VariableType::Float32;
+            buf.shape[0] = buf.shape[1] = 4;
+            buf.ndim                    = 2;
+            break;
+
+        case GL_SAMPLER_2D:
+            buf.dtype = VariableType::Invalid;
+            buf.ndim  = 0;
+            buf.type  = FragmentTexture;
+            break;
+
+        default:
+            throw std::runtime_error("Shader::Shader(): unsupported "
+                                     "uniform/attribute type!");
+        };
+
+        if (type == VertexBuffer)
+        {
+            for (int i = (int)buf.ndim - 1; i >= 0; --i)
+            {
+                buf.shape[i + 1] = buf.shape[i];
+            }
+            buf.shape[0] = 0;
+            buf.ndim++;
+        }
+    };
+
+    for (int i = 0; i < attribute_count; ++i)
+    {
+        char   attr_name[128];
+        GLenum type = 0;
+        GLint  size = 0;
+        CHK(glGetActiveAttrib(m_shader_handle, i, sizeof(attr_name), nullptr, &size, &type, attr_name));
+        GLint index;
+        CHK(index = glGetAttribLocation(m_shader_handle, attr_name));
+        register_buffer(VertexBuffer, attr_name, index, type);
+    }
+
+    for (int i = 0; i < uniform_count; ++i)
+    {
+        char   uniform_name[128];
+        GLenum type = 0;
+        GLint  size = 0;
+        CHK(glGetActiveUniform(m_shader_handle, i, sizeof(uniform_name), nullptr, &size, &type, uniform_name));
+        GLint index;
+        CHK(index = glGetUniformLocation(m_shader_handle, uniform_name));
+        register_buffer(UniformBuffer, uniform_name, index, type);
+    }
+
+    Buffer &buf  = m_buffers["indices"];
+    buf.index    = -1;
+    buf.ndim     = 1;
     buf.shape[0] = 0;
     buf.shape[1] = buf.shape[2] = 1;
-    buf.type = IndexBuffer;
-    buf.dtype = VariableType::UInt32;
+    buf.type                    = IndexBuffer;
+    buf.dtype                   = VariableType::UInt32;
+
+//#if defined(HELLOIMGUI_USE_GLAD)
+//    CHK(glGenVertexArrays(1, &m_vertex_array_handle));
+//
+//    m_uses_point_size = vertex_shader.find("gl_PointSize") != std::string::npos;
+//#endif
 }
 
-Shader::~Shader() {
+Shader::~Shader()
+{
     CHK(glDeleteProgram(m_shader_handle));
+//#if defined(HELLOIMGUI_USE_GLAD)
+//    CHK(glDeleteVertexArrays(1, &m_vertex_array_handle));
+//#endif
 }
 
-// TODO: learn this code: begin(), end(), draw_array(), set_buffer()
 void Shader::set_buffer(const std::string &name, VariableType dtype, size_t ndim, const size_t *shape, const void *data)
 {
     auto it = m_buffers.find(name);
@@ -172,11 +357,29 @@ void Shader::set_buffer(const std::string &name, VariableType dtype, size_t ndim
     buf.dirty = true;
 }
 
+// void Shader::set_texture(const std::string &name, Texture *texture)
+// {
+//     auto it = m_buffers.find(name);
+//     if (it == m_buffers.end())
+//         throw std::runtime_error("Shader::set_texture(): could not find argument named \"" + name + "\"");
+//     Buffer &buf = m_buffers[name];
+//     if (!(buf.type == VertexTexture || buf.type == FragmentTexture))
+//         throw std::runtime_error("Shader::set_texture(): argument named \"" + name + "\" is not a texture!");
+
+//     buf.buffer = (void *)((uintptr_t)texture->texture_handle());
+//     buf.dirty  = true;
+// }
+
 void Shader::begin()
 {
     int texture_unit = 0;
 
     CHK(glUseProgram(m_shader_handle));
+
+//#if defined(HELLOIMGUI_USE_GLAD)
+//    CHK(glBindVertexArray(m_vertex_array_handle));
+//#endif
+
     for (auto &[key, buf] : m_buffers)
     {
         bool indices = key == "indices";
@@ -192,6 +395,11 @@ void Shader::begin()
 
         GLuint buffer_id = (GLuint)((uintptr_t)buf.buffer);
         GLenum gl_type   = 0;
+
+#if defined(HELLOIMGUI_USE_GLAD)
+        if (!buf.dirty && buf.type != VertexTexture && buf.type != FragmentTexture)
+            continue;
+#endif
 
         bool uniform_error = false;
         switch (buf.type)
@@ -355,15 +563,25 @@ void Shader::begin()
         buf.dirty = false;
     }
 
-/*#ifndef __EMSCRIPTEN__
-    if (m_uses_point_size)
-        CHK(glEnable(GL_PROGRAM_POINT_SIZE));
-#endif*/
+//    if (m_blend_mode == BlendMode::AlphaBlend)
+//    {
+//        CHK(glEnable(GL_BLEND));
+//        CHK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+//    }
+//
+//#ifndef __EMSCRIPTEN__
+//    if (m_uses_point_size)
+//        CHK(glEnable(GL_PROGRAM_POINT_SIZE));
+//#endif
 }
 
 void Shader::end()
 {
+//    if (m_blend_mode == BlendMode::AlphaBlend)
+//        CHK(glDisable(GL_BLEND));
 #ifndef __EMSCRIPTEN__
+//    if (m_uses_point_size)
+//        CHK(glDisable(GL_PROGRAM_POINT_SIZE));
     CHK(glBindVertexArray(0));
 #else
     for (const auto &[key, buf] : m_buffers)
@@ -401,9 +619,11 @@ void Shader::draw_array(PrimitiveType primitive_type, size_t offset, size_t coun
     else
     {
         if (instances == 0)
-            CHK(glDrawElements(primitive_type_gl, (GLsizei)count, GL_UNSIGNED_INT, (const void *)(offset * sizeof(uint32_t))));
+            CHK(glDrawElements(primitive_type_gl, (GLsizei)count, GL_UNSIGNED_INT,
+                               (const void *)(offset * sizeof(uint32_t))));
         else
-            CHK(glDrawElementsInstanced(primitive_type_gl, (GLsizei)count, GL_UNSIGNED_INT, (const void *)(offset * sizeof(uint32_t)), instances));
+            CHK(glDrawElementsInstanced(primitive_type_gl, (GLsizei)count, GL_UNSIGNED_INT,
+                                        (const void *)(offset * sizeof(uint32_t)), instances));
     }
 }
 
@@ -430,3 +650,5 @@ std::string Shader::Buffer::to_string() const
     result += "]]";
     return result;
 }
+
+//#endif // defined(HELLOIMGUI_HAS_OPENGL)
