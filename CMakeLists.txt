@@ -36,8 +36,8 @@ include(cmake/CPM.cmake)
 # set(HELLOIMGUI_USE_SDL_OPENGL3 ON) - deprecated
 
 #set(HELLOIMGUI_USE_GLFW3 ON)
-set(HELLOIMGUI_USE_SDL2 ON)
-set(HELLOIMGUI_HAS_OPENGL3 ON)
+#set(HELLOIMGUI_USE_SDL2 ON)
+#set(HELLOIMGUI_HAS_OPENGL3 ON)
 CPMAddPackage("gh:pthom/hello_imgui#v1.6.0")
 if(hello_imgui_ADDED)
   message(STATUS "hello_imgui library added")

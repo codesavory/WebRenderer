@@ -3,10 +3,6 @@
 
 #include <fmt/core.h>
 
-#ifdef HELLOIMGUI_USE_SDL2
-#include <SDL.h>
-#endif
-
 int main(int , char *[])
 {
     try

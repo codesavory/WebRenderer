@@ -277,19 +277,19 @@ Shader::Shader(RenderPass *render_pass, const std::string &name, const std::stri
     buf.type                    = IndexBuffer;
     buf.dtype                   = VariableType::UInt32;
 
-//#if defined(HELLOIMGUI_USE_GLAD)
-//    CHK(glGenVertexArrays(1, &m_vertex_array_handle));
-//
+#if defined(HELLOIMGUI_USE_GLAD)
+    CHK(glGenVertexArrays(1, &m_vertex_array_handle));
+
 //    m_uses_point_size = vertex_shader.find("gl_PointSize") != std::string::npos;
-//#endif
+#endif
 }
 
 Shader::~Shader()
 {
     CHK(glDeleteProgram(m_shader_handle));
-//#if defined(HELLOIMGUI_USE_GLAD)
-//    CHK(glDeleteVertexArrays(1, &m_vertex_array_handle));
-//#endif
+#if defined(HELLOIMGUI_USE_GLAD)
+    CHK(glDeleteVertexArrays(1, &m_vertex_array_handle));
+#endif
 }
 
 void Shader::set_buffer(const std::string &name, VariableType dtype, size_t ndim, const size_t *shape, const void *data)
@@ -376,9 +376,9 @@ void Shader::begin()
 
     CHK(glUseProgram(m_shader_handle));
 
-//#if defined(HELLOIMGUI_USE_GLAD)
-//    CHK(glBindVertexArray(m_vertex_array_handle));
-//#endif
+#if defined(HELLOIMGUI_USE_GLAD)
+    CHK(glBindVertexArray(m_vertex_array_handle));
+#endif
 
     for (auto &[key, buf] : m_buffers)
     {

@@ -174,5 +174,8 @@ protected:
     
     //#if defined(HELLOIMGUI_HAS_OPENGL)
     uint32_t m_shader_handle = 0;
+#if defined(HELLOIMGUI_USE_GLAD)
+    uint32_t m_vertex_array_handle = 0;
+#endif
     
 };

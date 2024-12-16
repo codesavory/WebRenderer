@@ -5,7 +5,7 @@
 #include <fmt/core.h>
 #include <stdexcept>
 
-RenderPass::RenderPass() {
+RenderPass::RenderPass(bool clear) : m_clear(clear), m_clear_color(0, 0, 0, 0), m_viewport_offset(0), m_viewport_size(0), m_framebuffer_size(0), m_active(false) {
     m_viewport_size = m_framebuffer_size = int2{0, 0};
 }
 

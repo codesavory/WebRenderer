@@ -12,7 +12,13 @@ using namespace linalg::aliases;
 
 class RenderPass {
 public:
-    RenderPass();
+    /**
+     * Create a new render pass for rendering to the main color and (optionally) depth buffer.
+     *
+     * * \param clear
+     *     Should \ref enter() begin by clearing all buffers?
+     */
+    RenderPass(bool clear = true);
     ~RenderPass();
     
     /**
