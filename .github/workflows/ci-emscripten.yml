@@ -27,8 +27,11 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          brew install ninja emscripten pipx
-          pipx install Pillow
+          brew install ninja emscripten
+          python3 -m venv venv            # Create a virtual environment
+          source venv/bin/activate        # Activate the virtual environment
+          python3 -m pip install --upgrade pip
+          python3 -m pip install Pillow   # Install Pillow in the venv
 
       - uses: actions/checkout@v3
         with:
