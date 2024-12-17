@@ -6,7 +6,7 @@
 int main(int , char *[])
 {
     try
-    {
+    {        
         WebRenderer renderer;
         renderer.run();
     }

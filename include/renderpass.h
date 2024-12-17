@@ -4,6 +4,7 @@ Inspired by the works of Wojciech Jarosz in https://github.com/wkjarosz/SamplinS
 #pragma once
 
 #include "linalg.h"
+
 #include <unordered_map>
 
 using namespace linalg::aliases;
@@ -33,8 +34,20 @@ public:
     // Finish the render pass
     void end();
     
+    /// Set the clear color for a given color attachment
+    void set_clear_color(const float4 &color);
+    
+    /// Resize all texture targets attached to the render pass
+    void resize(const int2 &size);
+    
     // Set the pixel offset and size of the viewport region
     void set_viewport(const int2 &offset, const int2 &size);
+    
+    /// Return the pixel offset and size of the viewport region
+    std::pair<int2, int2> viewport()
+    {
+        return {m_viewport_offset, m_viewport_size};
+    }
 
 protected:
     bool m_clear;

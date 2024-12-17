@@ -64,7 +64,13 @@ void WebRenderer::draw_background() {
     auto &io = ImGui::GetIO();
     try
     {
-        //
+        // Debug Renderer Backend Print
+        //const char* backendName = io.BackendRendererName;
+        //if (backendName)
+        //    std::cout << "Current Renderer Backend: " << backendName << std::endl;
+        //else
+        //    std::cout << "Backend name not available" << std::endl;
+        
         // calculate the viewport sizes
         // fbsize is the size of the window in pixels while accounting for dpi factor on retina screens.
         // for retina displays, io.DisplaySize is the size of the window in points (logical pixels)
@@ -79,9 +85,12 @@ void WebRenderer::draw_background() {
             viewport_size     = int2{int(central_node->Size.x), int(central_node->Size.y)};
             viewport_offset   = int2{int(central_node->Pos.x), int(central_node->Pos.y)};
         }
+        //viewport_size = int2{800, 600};
         
+        m_render_pass.resize(fbsize);
         m_render_pass.set_viewport(viewport_offset * fbscale, viewport_size * fbscale);
-
+        m_render_pass.set_clear_color(float4{m_bg_color, 1.f});
+        
         // Start render pass
         m_render_pass.begin();
         

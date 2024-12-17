@@ -41,7 +41,11 @@ public:
     void draw_background();
     void run();
 private:
+    bool process_event(void *event);
+    
     RenderPass m_render_pass;
     Shader* m_triangle_shader = nullptr;
+    
+    float3 m_bg_color    = {0.0f, 0.0f, 0.0f};
     HelloImGui::RunnerParams m_params;
 };

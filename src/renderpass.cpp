@@ -14,6 +14,7 @@ RenderPass::~RenderPass() {
 }
 
 void RenderPass::begin() {
+    
     m_active = true;
     
     // Save the current viewport
@@ -22,7 +23,7 @@ void RenderPass::begin() {
     // Set the viewport for rendering
     set_viewport(m_viewport_offset, m_viewport_size);
     
-    // clear the color buffer
+    // clear the color buffers
     CHK(glClearColor(m_clear_color.x, m_clear_color.y, m_clear_color.z, m_clear_color.w));
     CHK(glClear(GL_COLOR_BUFFER_BIT));
     
@@ -33,6 +34,18 @@ void RenderPass::end() {
     CHK(glViewport(m_viewport_backup[0], m_viewport_backup[1], m_viewport_backup[2], m_viewport_backup[3]));
     
     m_active = false;
+}
+
+void RenderPass::resize(const int2 &size)
+{
+    m_framebuffer_size = size;
+    m_viewport_offset  = int2(0, 0);
+    m_viewport_size    = size;
+}
+
+void RenderPass::set_clear_color(const float4 &color)
+{
+    m_clear_color = color;
 }
 
 void RenderPass::set_viewport(const int2 &offset, const int2 &size) {
