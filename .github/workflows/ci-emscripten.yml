@@ -67,8 +67,8 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: |
           mkdir deploy
-          cp webRenderer.data webRenderer.html webRenderer.js webRenderer.wasm webRenderer_favicon.png deploy/
-          mv deploy/webRenderer.html deploy/index.html
+          cp WebRenderer.data WebRenderer.html WebRenderer.js WebRenderer.wasm WebRenderer_favicon.png deploy/
+          mv deploy/WebRenderer.html deploy/index.html
 
       - name: Publish
         uses: peaceiris/actions-gh-pages@v3
