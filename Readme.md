@@ -5,7 +5,7 @@ Building a real-time renderer for the web using OpenGL and C++. Using HelloImGui
 [Check out the WebRenderer demo here!](https://codesavory.github.io/WebRenderer/)
 
 <figure>
-  <figcaption>Static Triangle running in a web browser. Click the image to try it in a browser yourself:</figcaption>
+  <!-- <figcaption>Static Triangle running in a web browser. Click the image to try it in a browser yourself:</figcaption> -->
   <a href="https://codesavory.github.io/WebRenderer/" target="_blank">
     <img 
     src="./assets/thumbnails/renderTriangleWeb.png" 
