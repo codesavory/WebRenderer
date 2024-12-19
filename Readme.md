@@ -1,4 +1,6 @@
 # WebRenderer
+[![Emscripten build](https://github.com/codesavory/WebRenderer/actions/workflows/ci-emscripten.yml/badge.svg)](https://wkjarosz.github.com/SamplinSafari)
+
 Building a real-time renderer for the web using OpenGL and C++. Using HelloImGui to make it cross platform across: windows, linux, mac and web. Using WebAssembly and Emscripten to port to WebGL and Js.
 
 ## Progress
